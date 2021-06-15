@@ -19,82 +19,15 @@
 #include <map>
 #include <algorithm>
 #include <limits>
+#include "PrintRofs.h"
 
 namespace
 {
-template <typename T>
-std::string asString(T t);
-
-template <>
-std::string asString(o2::mch::ROFRecord rof)
-{
-  return fmt::format("{} FirstIdx: {:5d} LastIdx: {:5d}",
-                     rof.getBCData().asString(), rof.getFirstIdx(), rof.getLastIdx());
-}
-template <>
 std::string asString(o2::mch::Digit d)
 {
   return fmt::format("DetID {:4d} PadId {:10d} ADC {:10d} TFtime {:10d} NofSamples {:5d} {}",
                      d.getDetID(), d.getPadID(), d.getADC(), d.getTime(), d.getNofSamples(),
                      d.isSaturated() ? "(S)" : "");
-}
-
-std::map<o2::mch::ROFRecord, int64_t> computeMinTimeDistances(gsl::span<const o2::mch::ROFRecord> rofs)
-{
-  std::map<o2::mch::ROFRecord, int64_t> minTimeDistances;
-
-  for (auto i = 0; i < rofs.size(); i++) {
-    auto const& r = rofs[i];
-    o2::InteractionRecord iri{r.getBCData().bc,
-                              r.getBCData().orbit};
-    minTimeDistances[r] = std::numeric_limits<int64_t>::max();
-    for (auto j = 0; j < rofs.size(); j++) {
-      if (i == j) {
-        continue;
-      }
-      o2::InteractionRecord irj{rofs[j].getBCData().bc,
-                                rofs[j].getBCData().orbit};
-      auto d = irj.differenceInBC(iri);
-      if (d >= 0) {
-        minTimeDistances[rofs[i]] = std::min(minTimeDistances[rofs[i]], d);
-      }
-    }
-  }
-  return minTimeDistances;
-}
-
-void printRofs(std::ostream& os, gsl::span<const o2::mch::ROFRecord> rofs)
-{
-  auto minTimeDistances = computeMinTimeDistances(rofs);
-
-  for (auto i = 0; i < rofs.size(); i++) {
-    auto const& r = rofs[i];
-    o2::InteractionRecord iri{r.getBCData().bc,
-                              r.getBCData().orbit};
-    minTimeDistances[r] = std::numeric_limits<int64_t>::max();
-    for (auto j = 0; j < rofs.size(); j++) {
-      if (i == j) {
-        continue;
-      }
-      o2::InteractionRecord irj{rofs[j].getBCData().bc,
-                                rofs[j].getBCData().orbit};
-      auto d = irj.differenceInBC(iri);
-      if (d >= 0) {
-        minTimeDistances[rofs[i]] = std::min(minTimeDistances[rofs[i]], d);
-      }
-    }
-  }
-
-  os << fmt::format("{:=^70}\n", fmt::format("{} rofs", rofs.size()));
-  size_t i{0};
-  for (const auto& r : rofs) {
-    os << fmt::format("[{:6d}] {}", i, asString(r));
-    if (minTimeDistances[r] < 4) {
-      os << fmt::format(" min distance {} !", minTimeDistances[r]);
-    }
-    os << "\n";
-    ++i;
-  }
 }
 
 struct DigitIdComparator {

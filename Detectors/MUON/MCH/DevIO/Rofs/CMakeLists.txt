@@ -8,6 +8,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization or
 # submit itself to any jurisdiction.
 
-add_subdirectory(Rofs)
-add_subdirectory(Digits)
-add_subdirectory(Tracks)
+o2_add_library(MCHDevIORofs
+               SOURCES PrintRofs.cxx
+               PUBLIC_LINK_LIBRARIES fmt::fmt O2::DataFormatsMCH
+               PUBLIC_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR})
